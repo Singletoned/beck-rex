@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "podcast-transcriber"
+version = "1.0.0"
+description = "Download and transcribe podcast episodes using Whisper AI"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["podcast", "transcription", "whisper", "speech-to-text", "audio"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "feedparser==6.0.11",
+    "requests==2.31.0",
+    "openai-whisper==20231117",
+    "ffmpeg-python==0.2.0",
+    "tqdm==4.66.1",
+]
+
+[project.optional-dependencies]
+mlx = ["mlx-whisper"]  # Apple Silicon optimized version
+
+[project.scripts]
+podcast-transcriber = "main:main"
+
+[project.urls]
+Homepage = "https://github.com/Singletoned/beck-rex"
+Repository = "https://github.com/Singletoned/beck-rex"
+Issues = "https://github.com/Singletoned/beck-rex/issues"
+
+[tool.setuptools]
+packages = ["podcast_transcriber"]
