@@ -1,1 +1,214 @@
-# beck-rex
+# Podcast Transcriber
+
+A Python tool that downloads the latest episode of any podcast and transcribes the audio using OpenAI's Whisper speech-to-text model. Optimized for Apple Silicon (M1/M2/M3/M4/M5 MacBook Pro).
+
+## Features
+
+- 🎙️ Download latest episode from any podcast RSS feed
+- 🎯 Automatic episode detection
+- 📝 Audio transcription using Whisper AI
+- 🌍 Multi-language support with auto-detection
+- 📄 Multiple output formats (TXT, SRT, VTT)
+- ⚡ Optimized for Apple Silicon
+- 📊 Progress tracking for downloads and transcription
+
+## Prerequisites
+
+- macOS (optimized for Apple Silicon)
+- Python 3.8 or higher
+- FFmpeg (required by Whisper for audio processing)
+
+## Installation
+
+### 1. Install FFmpeg
+
+Using Homebrew:
+```bash
+brew install ffmpeg
+```
+
+### 2. Clone the repository
+
+```bash
+git clone <repository-url>
+cd beck-rex
+```
+
+### 3. Create a virtual environment (recommended)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 4. Install Python dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+**Note:** The first time you run transcription, Whisper will download the selected model (150MB - 3GB depending on size).
+
+## Usage
+
+### Basic Usage
+
+Download and transcribe the latest episode:
+
+```bash
+python3 main.py "https://feeds.example.com/podcast-rss-feed"
+```
+
+### Advanced Options
+
+```bash
+python3 main.py [RSS_URL] [OPTIONS]
+
+Options:
+  --model {tiny,base,small,medium,large}
+                        Whisper model size (default: base)
+                        - tiny: Fastest, least accurate (~1GB RAM)
+                        - base: Good balance (default) (~1GB RAM)
+                        - small: Better accuracy (~2GB RAM)
+                        - medium: High accuracy (~5GB RAM)
+                        - large: Best accuracy (~10GB RAM)
+
+  --format {txt,srt,vtt}
+                        Output format (default: txt)
+                        - txt: Plain text transcript
+                        - srt: SubRip subtitle format
+                        - vtt: WebVTT subtitle format
+
+  --language LANGUAGE   Language code (e.g., 'en', 'es', 'fr')
+                        Auto-detects if not specified
+
+  --download-only       Only download audio, skip transcription
+
+  --download-dir DIR    Directory for downloads (default: downloads)
+
+  --transcript-dir DIR  Directory for transcripts (default: transcripts)
+```
+
+### Examples
+
+**Download and transcribe with default settings:**
+```bash
+python3 main.py "https://feeds.example.com/podcast"
+```
+
+**Use a more accurate model:**
+```bash
+python3 main.py "https://feeds.example.com/podcast" --model medium
+```
+
+**Generate subtitles in SRT format:**
+```bash
+python3 main.py "https://feeds.example.com/podcast" --format srt
+```
+
+**Specify language for better accuracy:**
+```bash
+python3 main.py "https://feeds.example.com/podcast" --language en
+```
+
+**Only download without transcribing:**
+```bash
+python3 main.py "https://feeds.example.com/podcast" --download-only
+```
+
+## Finding Podcast RSS Feeds
+
+Most podcasts have RSS feeds. Here are some ways to find them:
+
+1. **Apple Podcasts**: Right-click on a podcast → "Copy Link" (this is usually the RSS feed)
+2. **Spotify**: Use third-party tools like Spotifeed
+3. **Podcast websites**: Often have an RSS icon or link
+4. **Podcast directories**: Search on sites like Podchaser or Listen Notes
+
+Example RSS feeds to test with:
+- NPR News: `https://feeds.npr.org/500005/podcast.xml`
+- The Daily: `https://feeds.simplecast.com/54nAGcIl`
+
+## Performance Notes
+
+### Model Selection
+- **tiny/base**: Fast transcription, good for quick testing
+- **small**: Good balance of speed and accuracy (recommended for most use cases)
+- **medium/large**: Best accuracy but slower, use for important transcriptions
+
+### Apple Silicon Optimization
+The project uses FP32 precision for better compatibility with Apple Silicon. For even better performance, you can optionally install MLX-optimized Whisper:
+
+```bash
+pip install mlx-whisper
+```
+
+### Transcription Time
+Approximate times on M1/M2/M3 chips:
+- 1-hour podcast with 'base' model: ~5-10 minutes
+- 1-hour podcast with 'medium' model: ~15-25 minutes
+- 1-hour podcast with 'large' model: ~30-45 minutes
+
+## Project Structure
+
+```
+beck-rex/
+├── main.py                      # CLI entry point
+├── podcast_transcriber/         # Main package
+│   ├── __init__.py
+│   ├── podcast_fetcher.py      # RSS feed parsing
+│   ├── downloader.py           # Audio downloading
+│   └── transcriber.py          # Whisper transcription
+├── downloads/                   # Downloaded audio files
+├── transcripts/                 # Generated transcripts
+├── requirements.txt            # Python dependencies
+└── README.md                   # This file
+```
+
+## Troubleshooting
+
+### FFmpeg not found
+```
+Error: ffmpeg not found
+```
+**Solution:** Install FFmpeg with `brew install ffmpeg`
+
+### Module not found
+```
+ModuleNotFoundError: No module named 'whisper'
+```
+**Solution:** Activate your virtual environment and reinstall dependencies:
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Out of memory during transcription
+**Solution:** Use a smaller model:
+```bash
+python3 main.py [URL] --model tiny
+```
+
+### Cannot find RSS feed
+**Solution:** Verify the RSS URL in a browser. It should return an XML file with podcast information.
+
+## Supported Audio Formats
+
+- MP3
+- M4A
+- WAV
+- OGG
+- And any format supported by FFmpeg
+
+## License
+
+MIT License - Feel free to use and modify as needed.
+
+## Contributing
+
+Contributions welcome! Please feel free to submit issues or pull requests.
+
+## Acknowledgments
+
+- [OpenAI Whisper](https://github.com/openai/whisper) for the transcription model
+- [feedparser](https://github.com/kurtmckee/feedparser) for RSS parsing

@@ -1,0 +1,14 @@
+# Core dependencies
+feedparser==6.0.11
+requests==2.31.0
+openai-whisper==20231117
+
+# For better performance on Apple Silicon
+# Uncomment if you want to use MLX (Apple Silicon optimized)
+# mlx-whisper
+
+# Audio processing (required by Whisper)
+ffmpeg-python==0.2.0
+
+# Additional utilities
+tqdm==4.66.1
