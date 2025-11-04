@@ -4,6 +4,7 @@ Module for fetching podcast information from RSS feeds using podcastparser
 
 import podcastparser
 import requests
+from io import BytesIO
 from typing import Optional, Dict
 
 
@@ -32,8 +33,9 @@ class PodcastFetcher:
             response = requests.get(self.rss_url, timeout=30)
             response.raise_for_status()
 
-            # Parse with podcastparser
-            self.feed = podcastparser.parse(self.rss_url, response.content)
+            # Parse with podcastparser (requires file-like object)
+            feed_stream = BytesIO(response.content)
+            self.feed = podcastparser.parse(self.rss_url, feed_stream)
 
             # Check if we have episodes
             return 'episodes' in self.feed and len(self.feed['episodes']) > 0
