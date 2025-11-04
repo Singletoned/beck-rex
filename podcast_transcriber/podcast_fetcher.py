@@ -29,8 +29,11 @@ class PodcastFetcher:
             bool: True if successful, False otherwise
         """
         try:
-            # Fetch the feed content
-            response = requests.get(self.rss_url, timeout=30)
+            # Fetch the feed content with proper headers
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            response = requests.get(self.rss_url, timeout=30, headers=headers)
             response.raise_for_status()
 
             # Parse with podcastparser (requires file-like object)

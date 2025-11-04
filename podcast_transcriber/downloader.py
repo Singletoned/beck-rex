@@ -55,8 +55,17 @@ class PodcastDownloader:
             print(f"Downloading from: {url}")
             print(f"Saving to: {filepath}")
 
+            # Set headers to mimic a legitimate podcast client
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'audio/mpeg, audio/x-m4a, audio/mp4, audio/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'identity',
+                'Range': 'bytes=0-',  # Some servers require Range header
+            }
+
             # Download with progress
-            response = requests.get(url, stream=True, timeout=30)
+            response = requests.get(url, stream=True, timeout=30, headers=headers, allow_redirects=True)
             response.raise_for_status()
 
             total_size = int(response.headers.get('content-length', 0))
