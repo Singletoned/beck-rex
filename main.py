@@ -4,87 +4,88 @@ Podcast Transcriber - Main CLI
 Download and transcribe the latest episode of a podcast
 """
 
-import argparse
-import sys
+import click
 from pathlib import Path
 from podcast_transcriber.podcast_fetcher import PodcastFetcher
 from podcast_transcriber.downloader import PodcastDownloader
 from podcast_transcriber.transcriber import AudioTranscriber
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Download and transcribe the latest episode of a podcast"
-    )
-    parser.add_argument(
-        "rss_url",
-        help="RSS feed URL of the podcast"
-    )
-    parser.add_argument(
-        "--model",
-        default="base",
-        choices=["tiny", "base", "small", "medium", "large"],
-        help="Whisper model size (default: base). Larger = more accurate but slower"
-    )
-    parser.add_argument(
-        "--format",
-        default="txt",
-        choices=["txt", "srt", "vtt"],
-        help="Output format for transcript (default: txt)"
-    )
-    parser.add_argument(
-        "--language",
-        help="Language code (e.g., 'en', 'es', 'fr'). Auto-detect if not specified"
-    )
-    parser.add_argument(
-        "--download-only",
-        action="store_true",
-        help="Only download the audio, don't transcribe"
-    )
-    parser.add_argument(
-        "--download-dir",
-        default="downloads",
-        help="Directory to save downloaded files (default: downloads)"
-    )
-    parser.add_argument(
-        "--transcript-dir",
-        default="transcripts",
-        help="Directory to save transcripts (default: transcripts)"
-    )
+@click.command()
+@click.argument('rss_url')
+@click.option(
+    '--model',
+    type=click.Choice(['tiny', 'base', 'small', 'medium', 'large'], case_sensitive=False),
+    default='base',
+    show_default=True,
+    help='Whisper model size. Larger = more accurate but slower.'
+)
+@click.option(
+    '--format',
+    'output_format',
+    type=click.Choice(['txt', 'srt', 'vtt'], case_sensitive=False),
+    default='txt',
+    show_default=True,
+    help='Output format for transcript.'
+)
+@click.option(
+    '--language',
+    help="Language code (e.g., 'en', 'es', 'fr'). Auto-detect if not specified."
+)
+@click.option(
+    '--download-only',
+    is_flag=True,
+    help='Only download the audio, don\'t transcribe.'
+)
+@click.option(
+    '--download-dir',
+    default='downloads',
+    show_default=True,
+    help='Directory to save downloaded files.'
+)
+@click.option(
+    '--transcript-dir',
+    default='transcripts',
+    show_default=True,
+    help='Directory to save transcripts.'
+)
+def main(rss_url, model, output_format, language, download_only, download_dir, transcript_dir):
+    """
+    Download and transcribe the latest episode of a podcast.
 
-    args = parser.parse_args()
-
-    print("=" * 80)
-    print("Podcast Transcriber")
-    print("=" * 80)
+    RSS_URL: The RSS feed URL of the podcast
+    """
+    click.echo("=" * 80)
+    click.echo("Podcast Transcriber")
+    click.echo("=" * 80)
 
     # Step 1: Fetch podcast information
-    print("\n[1/4] Fetching podcast feed...")
-    fetcher = PodcastFetcher(args.rss_url)
+    click.echo("\n[1/4] Fetching podcast feed...")
+    fetcher = PodcastFetcher(rss_url)
 
     if not fetcher.fetch_feed():
-        print("Error: Could not fetch podcast feed. Please check the RSS URL.")
-        return 1
+        click.secho("Error: Could not fetch podcast feed. Please check the RSS URL.", fg='red', err=True)
+        raise click.Abort()
 
     podcast_info = fetcher.get_podcast_info()
-    print(f"\nPodcast: {podcast_info.get('title', 'Unknown')}")
+    click.echo(f"\nPodcast: {podcast_info.get('title', 'Unknown')}")
 
     # Step 2: Get latest episode
-    print("\n[2/4] Finding latest episode...")
+    click.echo("\n[2/4] Finding latest episode...")
     episode = fetcher.get_latest_episode()
 
     if not episode:
-        print("Error: Could not find latest episode or audio URL.")
-        return 1
+        click.secho("Error: Could not find latest episode or audio URL.", fg='red', err=True)
+        raise click.Abort()
 
-    print(f"\nLatest Episode:")
-    print(f"  Title: {episode['title']}")
-    print(f"  Published: {episode['published']}")
-    print(f"  Audio URL: {episode['audio_url']}")
+    click.echo(f"\nLatest Episode:")
+    click.echo(f"  Title: {episode['title']}")
+    click.echo(f"  Published: {episode['published']}")
+    click.echo(f"  Audio URL: {episode['audio_url']}")
 
     # Step 3: Download audio
-    print("\n[3/4] Downloading audio...")
-    downloader = PodcastDownloader(download_dir=args.download_dir)
+    click.echo("\n[3/4] Downloading audio...")
+    downloader = PodcastDownloader(download_dir=download_dir)
 
     # Create a clean filename from episode title
     clean_title = "".join(c if c.isalnum() or c in (' ', '-', '_') else '_' for c in episode['title'])
@@ -93,51 +94,49 @@ def main():
     audio_path = downloader.download(episode['audio_url'], filename=f"{clean_title}.mp3")
 
     if not audio_path:
-        print("Error: Failed to download audio file.")
-        return 1
+        click.secho("Error: Failed to download audio file.", fg='red', err=True)
+        raise click.Abort()
 
     file_size = downloader.get_file_size(audio_path)
-    print(f"Downloaded file size: {file_size}")
+    click.echo(f"Downloaded file size: {file_size}")
 
-    if args.download_only:
-        print("\n✓ Download complete! (Transcription skipped)")
-        print(f"Audio saved to: {audio_path}")
-        return 0
+    if download_only:
+        click.echo("\n✓ Download complete! (Transcription skipped)")
+        click.secho(f"Audio saved to: {audio_path}", fg='green')
+        return
 
     # Step 4: Transcribe
-    print("\n[4/4] Transcribing audio...")
-    print(f"Using Whisper model: {args.model}")
-    print("Note: Transcription may take several minutes depending on audio length and model size.")
-    print("Recommendation: 'base' model is good for most cases. Use 'small' or 'medium' for better accuracy.")
+    click.echo("\n[4/4] Transcribing audio...")
+    click.echo(f"Using Whisper model: {model}")
+    click.echo("Note: Transcription may take several minutes depending on audio length and model size.")
+    click.echo("Recommendation: 'base' model is good for most cases. Use 'small' or 'medium' for better accuracy.")
 
-    transcriber = AudioTranscriber(model_size=args.model, output_dir=args.transcript_dir)
-    result = transcriber.transcribe(audio_path, language=args.language)
+    transcriber = AudioTranscriber(model_size=model, output_dir=transcript_dir)
+    result = transcriber.transcribe(audio_path, language=language)
 
     if not result:
-        print("Error: Transcription failed.")
-        return 1
+        click.secho("Error: Transcription failed.", fg='red', err=True)
+        raise click.Abort()
 
     # Save transcript
-    transcript_path = transcriber.save_transcript(result, audio_path, format=args.format)
+    transcript_path = transcriber.save_transcript(result, audio_path, format=output_format)
 
     if not transcript_path:
-        print("Error: Failed to save transcript.")
-        return 1
+        click.secho("Error: Failed to save transcript.", fg='red', err=True)
+        raise click.Abort()
 
     # Summary
-    print("\n" + "=" * 80)
-    print("✓ SUCCESS!")
-    print("=" * 80)
-    print(f"Audio saved to: {audio_path}")
-    print(f"Transcript saved to: {transcript_path}")
-    print(f"Detected language: {result.get('language', 'unknown')}")
-    print(f"\nTranscript preview (first 500 chars):")
-    print("-" * 80)
-    print(result['text'][:500] + "..." if len(result['text']) > 500 else result['text'])
-    print("-" * 80)
-
-    return 0
+    click.echo("\n" + "=" * 80)
+    click.secho("✓ SUCCESS!", fg='green', bold=True)
+    click.echo("=" * 80)
+    click.echo(f"Audio saved to: {audio_path}")
+    click.echo(f"Transcript saved to: {transcript_path}")
+    click.echo(f"Detected language: {result.get('language', 'unknown')}")
+    click.echo(f"\nTranscript preview (first 500 chars):")
+    click.echo("-" * 80)
+    click.echo(result['text'][:500] + "..." if len(result['text']) > 500 else result['text'])
+    click.echo("-" * 80)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

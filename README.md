@@ -11,6 +11,7 @@ A Python tool that downloads the latest episode of any podcast and transcribes t
 - 📄 Multiple output formats (TXT, SRT, VTT)
 - ⚡ Optimized for Apple Silicon
 - 📊 Progress tracking for downloads and transcription
+- 🖥️ User-friendly CLI powered by Click
 
 ## Prerequisites
 
@@ -59,34 +60,47 @@ Download and transcribe the latest episode:
 python3 main.py "https://feeds.example.com/podcast-rss-feed"
 ```
 
+### Getting Help
+
+View all available options:
+```bash
+python3 main.py --help
+```
+
 ### Advanced Options
 
-```bash
-python3 main.py [RSS_URL] [OPTIONS]
+```
+Usage: main.py [OPTIONS] RSS_URL
+
+  Download and transcribe the latest episode of a podcast.
 
 Options:
-  --model {tiny,base,small,medium,large}
-                        Whisper model size (default: base)
-                        - tiny: Fastest, least accurate (~1GB RAM)
-                        - base: Good balance (default) (~1GB RAM)
-                        - small: Better accuracy (~2GB RAM)
-                        - medium: High accuracy (~5GB RAM)
-                        - large: Best accuracy (~10GB RAM)
+  --model [tiny|base|small|medium|large]
+                                  Whisper model size. Larger = more accurate
+                                  but slower.  [default: base]
+                                  - tiny: Fastest, least accurate (~1GB RAM)
+                                  - base: Good balance (~1GB RAM)
+                                  - small: Better accuracy (~2GB RAM)
+                                  - medium: High accuracy (~5GB RAM)
+                                  - large: Best accuracy (~10GB RAM)
 
-  --format {txt,srt,vtt}
-                        Output format (default: txt)
-                        - txt: Plain text transcript
-                        - srt: SubRip subtitle format
-                        - vtt: WebVTT subtitle format
+  --format [txt|srt|vtt]          Output format for transcript.  [default: txt]
+                                  - txt: Plain text transcript
+                                  - srt: SubRip subtitle format
+                                  - vtt: WebVTT subtitle format
 
-  --language LANGUAGE   Language code (e.g., 'en', 'es', 'fr')
-                        Auto-detects if not specified
+  --language TEXT                 Language code (e.g., 'en', 'es', 'fr').
+                                  Auto-detect if not specified.
 
-  --download-only       Only download audio, skip transcription
+  --download-only                 Only download the audio, don't transcribe.
 
-  --download-dir DIR    Directory for downloads (default: downloads)
+  --download-dir TEXT             Directory to save downloaded files.
+                                  [default: downloads]
 
-  --transcript-dir DIR  Directory for transcripts (default: transcripts)
+  --transcript-dir TEXT           Directory to save transcripts.
+                                  [default: transcripts]
+
+  --help                          Show this message and exit.
 ```
 
 ### Examples
