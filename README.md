@@ -167,10 +167,10 @@ Approximate times on M1/M2/M3 chips:
 
 ```
 beck-rex/
-├── main.py                      # CLI entry point
+├── main.py                      # CLI entry point (Click-based)
 ├── podcast_transcriber/         # Main package
 │   ├── __init__.py
-│   ├── podcast_fetcher.py      # RSS feed parsing
+│   ├── podcast_fetcher.py      # RSS feed parsing (podcastparser)
 │   ├── downloader.py           # Audio downloading
 │   └── transcriber.py          # Whisper transcription
 ├── downloads/                   # Downloaded audio files
@@ -225,4 +225,5 @@ Contributions welcome! Please feel free to submit issues or pull requests.
 ## Acknowledgments
 
 - [OpenAI Whisper](https://github.com/openai/whisper) for the transcription model
-- [feedparser](https://github.com/kurtmckee/feedparser) for RSS parsing
+- [podcastparser](https://github.com/gpodder/podcastparser) from the gPodder project for reliable RSS/Atom podcast feed parsing
+- [Click](https://click.palletsprojects.com/) for the elegant command-line interface

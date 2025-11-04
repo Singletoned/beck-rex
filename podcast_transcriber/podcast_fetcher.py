@@ -1,14 +1,14 @@
 """
-Module for fetching podcast information from RSS feeds
+Module for fetching podcast information from RSS feeds using podcastparser
 """
 
-import feedparser
+import podcastparser
+import requests
 from typing import Optional, Dict
-from urllib.parse import urlparse
 
 
 class PodcastFetcher:
-    """Fetches podcast information from RSS feeds"""
+    """Fetches podcast information from RSS feeds using podcastparser"""
 
     def __init__(self, rss_url: str):
         """
@@ -22,18 +22,26 @@ class PodcastFetcher:
 
     def fetch_feed(self) -> bool:
         """
-        Fetch and parse the RSS feed
+        Fetch and parse the RSS feed using podcastparser
 
         Returns:
             bool: True if successful, False otherwise
         """
         try:
-            self.feed = feedparser.parse(self.rss_url)
-            if self.feed.bozo:
-                print(f"Warning: Feed has parsing issues: {self.feed.bozo_exception}")
-            return len(self.feed.entries) > 0
-        except Exception as e:
+            # Fetch the feed content
+            response = requests.get(self.rss_url, timeout=30)
+            response.raise_for_status()
+
+            # Parse with podcastparser
+            self.feed = podcastparser.parse(self.rss_url, response.content)
+
+            # Check if we have episodes
+            return 'episodes' in self.feed and len(self.feed['episodes']) > 0
+        except requests.exceptions.RequestException as e:
             print(f"Error fetching feed: {e}")
+            return False
+        except Exception as e:
+            print(f"Error parsing feed: {e}")
             return False
 
     def get_latest_episode(self) -> Optional[Dict[str, str]]:
@@ -43,24 +51,17 @@ class PodcastFetcher:
         Returns:
             Dict containing episode information or None if not found
         """
-        if not self.feed or not self.feed.entries:
+        if not self.feed or 'episodes' not in self.feed or not self.feed['episodes']:
             return None
 
-        latest = self.feed.entries[0]
+        # Episodes are typically in chronological order, first is latest
+        latest = self.feed['episodes'][0]
 
-        # Find the audio enclosure
+        # Get audio URL from enclosures
         audio_url = None
-        for enclosure in getattr(latest, 'enclosures', []):
-            if 'audio' in enclosure.get('type', ''):
-                audio_url = enclosure.get('href') or enclosure.get('url')
-                break
-
-        # Fallback: check links
-        if not audio_url:
-            for link in getattr(latest, 'links', []):
-                if 'audio' in link.get('type', ''):
-                    audio_url = link.get('href')
-                    break
+        if 'enclosures' in latest and latest['enclosures']:
+            # Get the first enclosure (usually the audio file)
+            audio_url = latest['enclosures'][0]['url']
 
         if not audio_url:
             print("Warning: No audio URL found in latest episode")
@@ -69,9 +70,9 @@ class PodcastFetcher:
         return {
             'title': latest.get('title', 'Unknown Title'),
             'published': latest.get('published', 'Unknown Date'),
-            'description': latest.get('summary', ''),
+            'description': latest.get('description', ''),
             'audio_url': audio_url,
-            'podcast_title': self.feed.feed.get('title', 'Unknown Podcast')
+            'podcast_title': self.feed.get('title', 'Unknown Podcast')
         }
 
     def get_podcast_info(self) -> Dict[str, str]:
@@ -85,7 +86,7 @@ class PodcastFetcher:
             return {}
 
         return {
-            'title': self.feed.feed.get('title', 'Unknown'),
-            'description': self.feed.feed.get('subtitle', ''),
-            'author': self.feed.feed.get('author', 'Unknown')
+            'title': self.feed.get('title', 'Unknown'),
+            'description': self.feed.get('description', ''),
+            'author': self.feed.get('author', 'Unknown')
         }
