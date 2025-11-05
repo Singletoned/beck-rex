@@ -12,6 +12,8 @@ A Python tool that downloads the latest episode of any podcast and transcribes t
 - ⚡ Optimized for Apple Silicon
 - 📊 Progress tracking for downloads and transcription
 - 🖥️ User-friendly CLI powered by Click
+- 🔄 Robust downloading with automatic retry and resume capability
+- 🔐 Proper authentication handling for podcast hosts
 
 ## Prerequisites
 
@@ -225,5 +227,6 @@ Contributions welcome! Please feel free to submit issues or pull requests.
 ## Acknowledgments
 
 - [OpenAI Whisper](https://github.com/openai/whisper) for the transcription model
+- [gPodder](https://gpodder.github.io/) for the robust podcast downloader with retry and resume capability
 - [podcastparser](https://github.com/gpodder/podcastparser) from the gPodder project for reliable RSS/Atom podcast feed parsing
 - [Click](https://click.palletsprojects.com/) for the elegant command-line interface
