@@ -3,6 +3,9 @@ podcastparser==0.6.10
 requests==2.31.0
 openai-whisper==20231117
 
+# Speaker diarization
+pyannote.audio==3.1.1
+
 # For better performance on Apple Silicon
 # Uncomment if you want to use MLX (Apple Silicon optimized)
 # mlx-whisper

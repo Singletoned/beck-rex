@@ -49,7 +49,22 @@ from podcast_transcriber.transcriber import AudioTranscriber
     show_default=True,
     help='Directory to save transcripts.'
 )
-def main(rss_url, model, output_format, language, download_only, download_dir, transcript_dir):
+@click.option(
+    '--diarize',
+    is_flag=True,
+    help='Enable speaker diarization (identifies different speakers).'
+)
+@click.option(
+    '--hf-token',
+    envvar='HF_TOKEN',
+    help='HuggingFace token for diarization model (or set HF_TOKEN env var).'
+)
+@click.option(
+    '--no-timestamps',
+    is_flag=True,
+    help='Disable timestamps in text output.'
+)
+def main(rss_url, model, output_format, language, download_only, download_dir, transcript_dir, diarize, hf_token, no_timestamps):
     """
     Download and transcribe the latest episode of a podcast.
 
@@ -108,18 +123,23 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     # Step 4: Transcribe
     click.echo("\n[4/4] Transcribing audio...")
     click.echo(f"Using Whisper model: {model}")
+    if diarize:
+        click.echo("Speaker diarization: ENABLED")
+        if not hf_token:
+            click.secho("Warning: No HuggingFace token provided. Set HF_TOKEN env var or use --hf-token", fg='yellow')
     click.echo("Note: Transcription may take several minutes depending on audio length and model size.")
     click.echo("Recommendation: 'base' model is good for most cases. Use 'small' or 'medium' for better accuracy.")
 
-    transcriber = AudioTranscriber(model_size=model, output_dir=transcript_dir)
-    result = transcriber.transcribe(audio_path, language=language)
+    transcriber = AudioTranscriber(model_size=model, output_dir=transcript_dir, enable_diarization=diarize)
+    result = transcriber.transcribe(audio_path, language=language, hf_token=hf_token)
 
     if not result:
         click.secho("Error: Transcription failed.", fg='red', err=True)
         raise click.Abort()
 
     # Save transcript
-    transcript_path = transcriber.save_transcript(result, audio_path, format=output_format)
+    include_timestamps = not no_timestamps
+    transcript_path = transcriber.save_transcript(result, audio_path, format=output_format, include_timestamps=include_timestamps)
 
     if not transcript_path:
         click.secho("Error: Failed to save transcript.", fg='red', err=True)
@@ -132,6 +152,9 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     click.echo(f"Audio saved to: {audio_path}")
     click.echo(f"Transcript saved to: {transcript_path}")
     click.echo(f"Detected language: {result.get('language', 'unknown')}")
+    if diarize and 'diarization' in result:
+        speakers = set(seg.get('speaker', 'Unknown') for seg in result['segments'])
+        click.echo(f"Speakers detected: {len(speakers)}")
     click.echo(f"\nTranscript preview (first 500 chars):")
     click.echo("-" * 80)
     click.echo(result['text'][:500] + "..." if len(result['text']) > 500 else result['text'])

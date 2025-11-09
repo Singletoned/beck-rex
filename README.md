@@ -7,8 +7,10 @@ A Python tool that downloads the latest episode of any podcast and transcribes t
 - 🎙️ Download latest episode from any podcast RSS feed
 - 🎯 Automatic episode detection
 - 📝 Audio transcription using Whisper AI
+- 👥 Speaker diarization (identify and label different speakers)
+- ⏱️ Timestamps for all transcription segments
 - 🌍 Multi-language support with auto-detection
-- 📄 Multiple output formats (TXT, SRT, VTT)
+- 📄 Multiple output formats (TXT, SRT, VTT) with speaker labels
 - ⚡ Optimized for Apple Silicon
 - 📊 Progress tracking for downloads and transcription
 - 🖥️ User-friendly CLI powered by Click
@@ -51,6 +53,21 @@ pip install -r requirements.txt
 ```
 
 **Note:** The first time you run transcription, Whisper will download the selected model (150MB - 3GB depending on size).
+
+### 5. (Optional) Setup Speaker Diarization
+
+To enable speaker diarization (identifying different speakers), you need a HuggingFace token:
+
+1. Create a free account at [HuggingFace](https://huggingface.co/join)
+2. Go to [Settings > Access Tokens](https://huggingface.co/settings/tokens)
+3. Create a new token with read permissions
+4. Accept the terms for [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+5. Accept the terms for [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+6. Set your token as an environment variable:
+   ```bash
+   export HF_TOKEN="your_token_here"
+   ```
+   Or add it to your `~/.bashrc` or `~/.zshrc` for persistence.
 
 ## Usage
 
@@ -102,6 +119,14 @@ Options:
   --transcript-dir TEXT           Directory to save transcripts.
                                   [default: transcripts]
 
+  --diarize                       Enable speaker diarization (identifies
+                                  different speakers).
+
+  --hf-token TEXT                 HuggingFace token for diarization model
+                                  (or set HF_TOKEN env var).
+
+  --no-timestamps                 Disable timestamps in text output.
+
   --help                          Show this message and exit.
 ```
 
@@ -125,6 +150,16 @@ python3 main.py "https://feeds.example.com/podcast" --format srt
 **Specify language for better accuracy:**
 ```bash
 python3 main.py "https://feeds.example.com/podcast" --language en
+```
+
+**Enable speaker diarization (requires HuggingFace token):**
+```bash
+# Set token as environment variable
+export HF_TOKEN="your_huggingface_token"
+python3 main.py "https://feeds.example.com/podcast" --diarize
+
+# Or pass token directly
+python3 main.py "https://feeds.example.com/podcast" --diarize --hf-token "your_token"
 ```
 
 **Only download without transcribing:**
@@ -227,6 +262,7 @@ Contributions welcome! Please feel free to submit issues or pull requests.
 ## Acknowledgments
 
 - [OpenAI Whisper](https://github.com/openai/whisper) for the transcription model
+- [pyannote.audio](https://github.com/pyannote/pyannote-audio) for speaker diarization capabilities
 - [gPodder](https://gpodder.github.io/) for the robust podcast downloader with retry and resume capability
 - [podcastparser](https://github.com/gpodder/podcastparser) from the gPodder project for reliable RSS/Atom podcast feed parsing
 - [Click](https://click.palletsprojects.com/) for the elegant command-line interface
