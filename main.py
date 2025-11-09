@@ -126,7 +126,17 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     if diarize:
         click.echo("Speaker diarization: ENABLED")
         if not hf_token:
-            click.secho("Warning: No HuggingFace token provided. Set HF_TOKEN env var or use --hf-token", fg='yellow')
+            click.secho("\n⚠️  WARNING: No HuggingFace token provided!", fg='yellow', bold=True)
+            click.secho("   Diarization WILL NOT WORK without a token.", fg='yellow')
+            click.secho("   Set HF_TOKEN env var or use --hf-token parameter", fg='yellow')
+            click.secho("\n   To set up diarization:", fg='cyan')
+            click.secho("   1. Get free token at: https://huggingface.co/settings/tokens", fg='cyan')
+            click.secho("   2. Accept terms at: https://huggingface.co/pyannote/speaker-diarization-3.1", fg='cyan')
+            click.secho("   3. Run: export HF_TOKEN='your_token'", fg='cyan')
+
+            if not click.confirm("\n   Continue without diarization?", default=True):
+                click.echo("Aborted.")
+                raise click.Abort()
     click.echo("Note: Transcription may take several minutes depending on audio length and model size.")
     click.echo("Recommendation: 'base' model is good for most cases. Use 'small' or 'medium' for better accuracy.")
 
@@ -152,9 +162,15 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     click.echo(f"Audio saved to: {audio_path}")
     click.echo(f"Transcript saved to: {transcript_path}")
     click.echo(f"Detected language: {result.get('language', 'unknown')}")
-    if diarize and 'diarization' in result:
-        speakers = set(seg.get('speaker', 'Unknown') for seg in result['segments'])
-        click.echo(f"Speakers detected: {len(speakers)}")
+
+    # Check if diarization actually happened
+    if diarize:
+        if 'diarization' in result and result['diarization']:
+            speakers = set(seg.get('speaker', 'Unknown') for seg in result['segments'])
+            click.secho(f"✓ Speakers detected: {len(speakers)}", fg='green')
+        else:
+            click.secho("⚠️  Diarization was requested but did not run (likely missing HF_TOKEN)", fg='yellow')
+
     click.echo(f"\nTranscript preview (first 500 chars):")
     click.echo("-" * 80)
     click.echo(result['text'][:500] + "..." if len(result['text']) > 500 else result['text'])
