@@ -3,6 +3,7 @@ Module for downloading podcast audio files using robust gPodder downloader
 """
 
 import os
+import requests
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse, unquote
@@ -33,6 +34,49 @@ class PodcastDownloader:
             timeout=60
         )
 
+    def _is_download_complete(self, filepath: Path, url: str) -> bool:
+        """
+        Check if a downloaded file is complete by comparing with remote size
+
+        Args:
+            filepath: Local file path
+            url: URL of the remote file
+
+        Returns:
+            True if file is complete, False otherwise
+        """
+        if not filepath.exists():
+            return False
+
+        try:
+            local_size = filepath.stat().st_size
+
+            # If file is very small, it's probably incomplete
+            if local_size < 1024:  # Less than 1KB
+                return False
+
+            # Try to get the remote file size with a HEAD request
+            headers = {
+                'User-Agent': 'PodcastTranscriber/1.0 (Whisper AI Transcription)'
+            }
+            response = requests.head(url, headers=headers, allow_redirects=True, timeout=10)
+
+            if response.status_code == 200:
+                remote_size = response.headers.get('content-length')
+                if remote_size:
+                    remote_size = int(remote_size)
+                    # File is complete if sizes match
+                    return local_size == remote_size
+
+            # If we can't get remote size, assume file is complete if it's reasonably sized
+            # Most podcast episodes are at least 1MB
+            return local_size > 1024 * 1024  # > 1MB
+
+        except Exception as e:
+            # If we can't check, assume incomplete to be safe
+            print(f"Could not verify file completeness: {e}")
+            return False
+
     def download(self, url: str, filename: Optional[str] = None) -> Optional[str]:
         """
         Download an audio file from URL with retry and resume capability
@@ -60,9 +104,15 @@ class PodcastDownloader:
 
             # Check if file already exists and is complete
             if filepath.exists():
-                # Let the robust downloader handle resume if file is incomplete
-                print(f"File exists: {filepath}")
-                print("Checking if download is complete or needs resume...")
+                if self._is_download_complete(filepath, url):
+                    file_size = self.get_file_size(str(filepath))
+                    print(f"✓ File already downloaded: {filepath}")
+                    print(f"  Size: {file_size}")
+                    print("  Skipping download, using existing file.")
+                    return str(filepath)
+                else:
+                    print(f"File exists but appears incomplete: {filepath}")
+                    print("Will attempt to resume download...")
 
             print(f"Downloading from: {url}")
             print(f"Saving to: {filepath}")
