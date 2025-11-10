@@ -43,38 +43,35 @@ class AudioTranscriber:
     def load_diarization_pipeline(self, hf_token: Optional[str] = None):
         """Load the speaker diarization pipeline"""
         if self.diarization_pipeline is None and self.enable_diarization:
-            try:
-                from pyannote.audio import Pipeline
-                import torch
+            from pyannote.audio import Pipeline
+            import torch
 
-                print("Loading speaker diarization model...")
-                print("Note: This requires accepting pyannote/speaker-diarization terms on HuggingFace")
+            print("Loading speaker diarization model...")
+            print("Note: This requires accepting pyannote/speaker-diarization terms on HuggingFace")
 
-                # Try to load from environment variable if not provided
-                if hf_token is None:
-                    hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGINGFACE_TOKEN')
+            # Try to load from environment variable if not provided
+            if hf_token is None:
+                hf_token = os.environ.get('HF_TOKEN') or os.environ.get('HUGGINGFACE_TOKEN')
 
-                if hf_token:
-                    self.diarization_pipeline = Pipeline.from_pretrained(
-                        "pyannote/speaker-diarization-3.1",
-                        use_auth_token=hf_token
-                    )
-                    # Use GPU if available, otherwise CPU
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                    if device.type == "cpu" and torch.backends.mps.is_available():
-                        device = torch.device("mps")  # Use Apple Silicon GPU
-                    self.diarization_pipeline.to(device)
-                    print(f"Diarization model loaded successfully! Using device: {device}")
-                else:
-                    print("Warning: HuggingFace token not found. Diarization disabled.")
-                    print("Set HF_TOKEN environment variable or pass --hf-token parameter")
-                    self.enable_diarization = False
-            except Exception as e:
-                print(f"Warning: Could not load diarization model: {e}")
-                print("Continuing without speaker diarization...")
-                self.enable_diarization = False
+            if not hf_token:
+                raise ValueError(
+                    "HuggingFace token required for diarization. "
+                    "Set HF_TOKEN environment variable or pass --hf-token parameter. "
+                    "Get token at: https://huggingface.co/settings/tokens"
+                )
 
-    def transcribe(self, audio_path: str, language: Optional[str] = None, hf_token: Optional[str] = None) -> Optional[Dict]:
+            self.diarization_pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=hf_token
+            )
+            # Use GPU if available, otherwise CPU
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            if device.type == "cpu" and torch.backends.mps.is_available():
+                device = torch.device("mps")  # Use Apple Silicon GPU
+            self.diarization_pipeline.to(device)
+            print(f"Diarization model loaded successfully! Using device: {device}")
+
+    def transcribe(self, audio_path: str, language: Optional[str] = None, hf_token: Optional[str] = None) -> Dict:
         """
         Transcribe an audio file with optional speaker diarization
 
@@ -84,41 +81,34 @@ class AudioTranscriber:
             hf_token: Optional HuggingFace token for diarization
 
         Returns:
-            Dict containing transcription result or None if failed
+            Dict containing transcription result
         """
-        try:
-            self.load_model()
+        self.load_model()
 
-            print(f"\nTranscribing: {audio_path}")
-            print("This may take several minutes depending on the audio length...")
+        print(f"\nTranscribing: {audio_path}")
+        print("This may take several minutes depending on the audio length...")
 
-            # Transcribe with word-level timestamps for diarization
-            result = self.model.transcribe(
-                audio_path,
-                language=language,
-                fp16=False,  # Use FP32 for better compatibility with Apple Silicon
-                word_timestamps=self.enable_diarization  # Enable word timestamps for diarization
-            )
+        # Transcribe with word-level timestamps for diarization
+        result = self.model.transcribe(
+            audio_path,
+            language=language,
+            fp16=False,  # Use FP32 for better compatibility with Apple Silicon
+            word_timestamps=self.enable_diarization  # Enable word timestamps for diarization
+        )
 
-            print("\nTranscription complete!")
+        print("\nTranscription complete!")
 
-            # Perform speaker diarization if enabled
-            if self.enable_diarization:
-                self.load_diarization_pipeline(hf_token)
-                if self.diarization_pipeline is not None:
-                    print("\nPerforming speaker diarization...")
-                    diarization = self.diarization_pipeline(audio_path)
-                    result['diarization'] = self._format_diarization(diarization)
-                    result = self._assign_speakers_to_segments(result)
-                    print("Speaker diarization complete!")
+        # Perform speaker diarization if enabled
+        if self.enable_diarization:
+            self.load_diarization_pipeline(hf_token)
+            if self.diarization_pipeline is not None:
+                print("\nPerforming speaker diarization...")
+                diarization = self.diarization_pipeline(audio_path)
+                result['diarization'] = self._format_diarization(diarization)
+                result = self._assign_speakers_to_segments(result)
+                print("Speaker diarization complete!")
 
-            return result
-
-        except Exception as e:
-            print(f"Error during transcription: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+        return result
 
     def _format_diarization(self, diarization) -> List[Dict]:
         """Format diarization results into a list of speaker segments"""
@@ -157,7 +147,7 @@ class AudioTranscriber:
 
         return result
 
-    def save_transcript(self, result: Dict, audio_filename: str, format: str = "txt", include_timestamps: bool = True) -> Optional[str]:
+    def save_transcript(self, result: Dict, audio_filename: str, format: str = "txt", include_timestamps: bool = True) -> str:
         """
         Save transcript to file
 
@@ -168,38 +158,30 @@ class AudioTranscriber:
             include_timestamps: Include timestamps in text format
 
         Returns:
-            Path to saved transcript or None if failed
+            Path to saved transcript
         """
-        try:
-            base_name = Path(audio_filename).stem
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            has_speakers = 'diarization' in result and result['diarization']
+        base_name = Path(audio_filename).stem
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        has_speakers = 'diarization' in result and result['diarization']
 
-            if format == "txt":
-                suffix = "_diarized" if has_speakers else ""
-                output_file = self.output_dir / f"{base_name}_{timestamp}{suffix}.txt"
-                self._write_txt(output_file, result, audio_filename, include_timestamps)
+        if format == "txt":
+            suffix = "_diarized" if has_speakers else ""
+            output_file = self.output_dir / f"{base_name}_{timestamp}{suffix}.txt"
+            self._write_txt(output_file, result, audio_filename, include_timestamps)
 
-            elif format == "srt":
-                output_file = self.output_dir / f"{base_name}_{timestamp}.srt"
-                self._write_srt(output_file, result['segments'])
+        elif format == "srt":
+            output_file = self.output_dir / f"{base_name}_{timestamp}.srt"
+            self._write_srt(output_file, result['segments'])
 
-            elif format == "vtt":
-                output_file = self.output_dir / f"{base_name}_{timestamp}.vtt"
-                self._write_vtt(output_file, result['segments'])
+        elif format == "vtt":
+            output_file = self.output_dir / f"{base_name}_{timestamp}.vtt"
+            self._write_vtt(output_file, result['segments'])
 
-            else:
-                print(f"Unsupported format: {format}")
-                return None
+        else:
+            raise ValueError(f"Unsupported format: {format}")
 
-            print(f"Transcript saved to: {output_file}")
-            return str(output_file)
-
-        except Exception as e:
-            print(f"Error saving transcript: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+        print(f"Transcript saved to: {output_file}")
+        return str(output_file)
 
     def _write_txt(self, filepath: Path, result: Dict, audio_filename: str, include_timestamps: bool):
         """Write plain text format with optional speakers and timestamps"""

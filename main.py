@@ -125,35 +125,15 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     click.echo(f"Using Whisper model: {model}")
     if diarize:
         click.echo("Speaker diarization: ENABLED")
-        if not hf_token:
-            click.secho("\n⚠️  WARNING: No HuggingFace token provided!", fg='yellow', bold=True)
-            click.secho("   Diarization WILL NOT WORK without a token.", fg='yellow')
-            click.secho("   Set HF_TOKEN env var or use --hf-token parameter", fg='yellow')
-            click.secho("\n   To set up diarization:", fg='cyan')
-            click.secho("   1. Get free token at: https://huggingface.co/settings/tokens", fg='cyan')
-            click.secho("   2. Accept terms at: https://huggingface.co/pyannote/speaker-diarization-3.1", fg='cyan')
-            click.secho("   3. Run: export HF_TOKEN='your_token'", fg='cyan')
-
-            if not click.confirm("\n   Continue without diarization?", default=True):
-                click.echo("Aborted.")
-                raise click.Abort()
     click.echo("Note: Transcription may take several minutes depending on audio length and model size.")
     click.echo("Recommendation: 'base' model is good for most cases. Use 'small' or 'medium' for better accuracy.")
 
     transcriber = AudioTranscriber(model_size=model, output_dir=transcript_dir, enable_diarization=diarize)
     result = transcriber.transcribe(audio_path, language=language, hf_token=hf_token)
 
-    if not result:
-        click.secho("Error: Transcription failed.", fg='red', err=True)
-        raise click.Abort()
-
     # Save transcript
     include_timestamps = not no_timestamps
     transcript_path = transcriber.save_transcript(result, audio_path, format=output_format, include_timestamps=include_timestamps)
-
-    if not transcript_path:
-        click.secho("Error: Failed to save transcript.", fg='red', err=True)
-        raise click.Abort()
 
     # Summary
     click.echo("\n" + "=" * 80)
@@ -162,15 +142,9 @@ def main(rss_url, model, output_format, language, download_only, download_dir, t
     click.echo(f"Audio saved to: {audio_path}")
     click.echo(f"Transcript saved to: {transcript_path}")
     click.echo(f"Detected language: {result.get('language', 'unknown')}")
-
-    # Check if diarization actually happened
-    if diarize:
-        if 'diarization' in result and result['diarization']:
-            speakers = set(seg.get('speaker', 'Unknown') for seg in result['segments'])
-            click.secho(f"✓ Speakers detected: {len(speakers)}", fg='green')
-        else:
-            click.secho("⚠️  Diarization was requested but did not run (likely missing HF_TOKEN)", fg='yellow')
-
+    if diarize and 'diarization' in result and result['diarization']:
+        speakers = set(seg.get('speaker', 'Unknown') for seg in result['segments'])
+        click.echo(f"Speakers detected: {len(speakers)}")
     click.echo(f"\nTranscript preview (first 500 chars):")
     click.echo("-" * 80)
     click.echo(result['text'][:500] + "..." if len(result['text']) > 500 else result['text'])
