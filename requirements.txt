@@ -1,20 +1,18 @@
 # Core dependencies
-podcastparser==0.6.10
-requests==2.31.0
-openai-whisper==20231117
+podcastparser
+requests
+openai-whisper
 
-# Speaker diarization - pin compatible versions
-pyannote.audio==3.1.1
-torch>=2.0.0,<2.2.0
-torchaudio>=2.0.0,<2.2.0
+# Speaker diarization
+pyannote.audio
 
 # For better performance on Apple Silicon
 # Uncomment if you want to use MLX (Apple Silicon optimized)
 # mlx-whisper
 
 # Audio processing (required by Whisper)
-ffmpeg-python==0.2.0
+ffmpeg-python
 
 # Additional utilities
-tqdm==4.66.1
-click==8.1.7
+tqdm
+click

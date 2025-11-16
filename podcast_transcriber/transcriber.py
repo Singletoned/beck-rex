@@ -43,6 +43,12 @@ class AudioTranscriber:
     def load_diarization_pipeline(self, hf_token: Optional[str] = None):
         """Load the speaker diarization pipeline"""
         if self.diarization_pipeline is None and self.enable_diarization:
+            # Fix compatibility with newer torchaudio versions
+            import torchaudio
+            if not hasattr(torchaudio, 'set_audio_backend'):
+                # Newer versions don't need this, add a no-op for compatibility
+                torchaudio.set_audio_backend = lambda x: None
+
             from pyannote.audio import Pipeline
             import torch
 

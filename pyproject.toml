@@ -27,15 +27,13 @@ classifiers = [
 ]
 
 dependencies = [
-    "podcastparser==0.6.10",
-    "requests==2.31.0",
-    "openai-whisper==20231117",
-    "pyannote.audio==3.1.1",
-    "torch>=2.0.0,<2.2.0",
-    "torchaudio>=2.0.0,<2.2.0",
-    "ffmpeg-python==0.2.0",
-    "tqdm==4.66.1",
-    "click==8.1.7",
+    "podcastparser",
+    "requests",
+    "openai-whisper",
+    "pyannote.audio",
+    "ffmpeg-python",
+    "tqdm",
+    "click",
 ]
 
 [project.optional-dependencies]
