@@ -31,6 +31,7 @@ dependencies = [
     "requests",
     "openai-whisper",
     "pyannote.audio",
+    "numpy<2.0",  # pyannote.audio not yet compatible with numpy 2.0
     "ffmpeg-python",
     "tqdm",
     "click",

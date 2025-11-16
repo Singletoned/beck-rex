@@ -5,6 +5,7 @@ openai-whisper
 
 # Speaker diarization
 pyannote.audio
+numpy<2.0  # pyannote.audio not yet compatible with numpy 2.0
 
 # For better performance on Apple Silicon
 # Uncomment if you want to use MLX (Apple Silicon optimized)
